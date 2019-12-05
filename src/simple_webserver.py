@@ -21,7 +21,7 @@ app = FastAPI()
 sensor = Sensor(standalone_Logger, config['DHT'])
 
 @app.get("/")
-def read_root():
+async def read_root():
     temp, hum = sensor.read_Data()
 
     return f'Температура - {temp} ' + '\u2103 ' + f' Влажность - {hum} %'
