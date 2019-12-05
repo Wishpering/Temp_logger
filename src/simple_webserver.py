@@ -24,7 +24,7 @@ sensor = Sensor(standalone_Logger, config['DHT'])
 def read_root():
     temp, hum = sensor.read_Data()
 
-    return f'Температура - {temp} ℃   Влажность - {hum} %'
+    return f'Температура - {temp} ' + '\u2103 ' + f' Влажность - {hum} %'
 
 if __name__ == '__main__':
     run("simple_webserver:app", host = gethostbyname(gethostname()) , port = 1435, log_level = "info", reload = True)
