@@ -53,7 +53,7 @@ if __name__ == '__main__':
     + 'Description=Temperature logger' + '\n' \
     + 'After=network.target' + '\n' + '\n'\
     + '[Service]' + '\n' \
-    + 'ExecStart=python3' + src_Path + 'main.py' + '\n' \
+    + 'ExecStart=python3 ' + src_Path + 'main.py' + '\n' \
     + 'Restart=on-failure' + '\n' + '\n' \
     + '[Install]' + '\n' \
     + 'WantedBy=multi-user.target'
@@ -83,7 +83,6 @@ if __name__ == '__main__':
         exit()
 
     if args.get('kill_web_server'):
-        #python3 /root/git/python/temp_dat/src/simple_webserver.py
         system(f'killall -9 python3 {src_Path}simple_webserver.py')
         exit()
         
