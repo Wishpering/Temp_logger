@@ -83,7 +83,7 @@ if __name__ == '__main__':
         exit()
 
     if args.get('kill_web_server'):
-        system(f'killall -9 python3 {src_Path}simple_webserver.py')
+        system(f'killall -9 python3 {src_Path}simple_webserver.py >> /dev/null')
         exit()
         
     # Если выбрана демонизация

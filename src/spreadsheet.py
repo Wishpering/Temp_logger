@@ -19,7 +19,7 @@ class Spreadsheet(object):
                 ]
     
         # Вытаскиваем из JSON все что нужно
-        self.credentials = ServiceAccountCredentials.from_json_keyfile_name(f'{self.Path}auth/auth.json', scope)
+        self.credentials = ServiceAccountCredentials.from_json_keyfile_name(f'{self.Path}/auth/auth.json', scope)
     
         # Пытаемся авторизоваться
         try:

@@ -23,12 +23,10 @@ class File(object):
             with open(f'{self.Path}{self.path_To_File}', 'r') as file_For_Load:
         
                 # Считываем первую и последнюю строку файла для того, чтобы узнать, в каких пределах находятся значения
-                first_Line = file_For_Load.readline().split(' ')
-                first_Line = first_Line[0] + ' ' + first_Line[1]
+                first_Line = file_For_Load.readline().rsplit(' ', 7)[0].split('.')[0]
                     
                 try:
-                    last_Line = file_For_Load.readlines()[-1].split(' ')
-                    last_Line = last_Line[0] + ' ' + last_Line[1]
+                    last_Line = file_For_Load.readlines()[-1].rsplit(' ', 7)[0].split('.')[0]
                 
                 # Если в доке только одна строка
                 except IndexError:
@@ -46,7 +44,7 @@ class File(object):
             with open(f'{self.Path}{self.path_To_File}', 'rb') as file_For_Load:
                 # Добавляем заголовки (используем общий тип)
                 maintype, subtype = 'application/octet-stream'.split('/', 1)
-                file = MIMEBase(maintype,subtype)
+                file = MIMEBase(maintype, subtype)
                 file.set_payload(file_For_Load.read())
 
                 # Кодируем файл с помощью Base64
@@ -61,13 +59,13 @@ class File(object):
             self.Logger.write_To_Log('Cannot open file to prepare it for upload')  
 
     # Сжатие файла
-    def zip_File(self, path_For_Zip):
+    def zip_File(self):
         # Записываем дату сжатия                                                                                                                                                                              
-        zip_Data = str(datetime.now()).split(' ')
+        zip_Data = f'{datetime.now()}'.split(' ')
 
         # Архивируем файл с помощью bzip2 сжатия                                                                                                                                                              
         with open(f'{self.Path}{self.path_To_File}', 'rb') as temperature_Log:
-            with open(f'{self.Path}{path_For_Zip}{zip_Data[0]}__{str(zip_Data[1]).split(".")[0]}.br', 'wb') as arch:
+            with open(f'{self.Path}/data/{zip_Data[0]}__{zip_Data[1].split(".")[0]}.br', 'wb') as arch:
                 arch.write(compress(temperature_Log.read()))
 
     # Отчистка файла
