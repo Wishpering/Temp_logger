@@ -29,11 +29,9 @@ Logger = Logger(Path, 'log.log')
 
 # Инициализируем переменные
 last_Time_Send, last_Arch_Time = datetime.now(), datetime.now()
-
-# Флаговые переменные, указывающие на состояние коннекта к mail/spreadsheet
+# Переменные, указывающие на состояние коннекта к mail/spreadsheet
 is_Connected_To_Mail = False
 is_Connected_To_Spreadsheet = False
-
 # Первая ли ты, попытка законнектится?
 first_Try_To_Connect = True
 
@@ -47,6 +45,9 @@ except FileNotFoundError:
     exit()
 
 sleep_Period = int(cfg['DHT']['Period'])
+site_For_Check = cfg['Main']['Site_for_check'].lower()
+mail_Status = cfg['email']['Mail_status'].lower()
+spreadsheet_Status = cfg['Spreadsheet']['Status'].lower()
 
 # Создаем экземляры классов
 log_File = File(Path, path_To_Temperature_Log, Logger)
@@ -55,14 +56,14 @@ mail = Mail(log_File, Logger, cfg.get('email'))
 spr_sheet = Spreadsheet(Logger, Path, path_To_Temperature_Log, cfg.get('Spreadsheet'))
 
 # Если есть инет, пробуем законнектится
-if is_Connected(cfg['Main']['Site_for_check']) == True:
+if is_Connected(site_For_Check) == True:
     # Инициализруем почту, если включена отправка почты
-    if cfg['email']['Mail_status'].lower() == 'on':
+    if mail_Status == 'on':
         mail.login()
         is_Connected_To_Mail = True
 
     # Инициализруем гугл докс, если они включены в конфиге
-    if cfg['Spreadsheet']['Status'].lower() == 'on':
+    if spreadsheet_Status == 'on':
         # Логинимся и открываем таблицу
         spr_sheet.login()
         spr_sheet.open_Spreadsheet()
@@ -71,8 +72,8 @@ if is_Connected(cfg['Main']['Site_for_check']) == True:
         if cfg['Spreadsheet']['Clear spreadsheet on start'].lower() == 'on':
             spr_sheet.clear_Spreadsheet()
 
-        # Создаем описание колонок
-        spr_sheet.create_Cols_Description()
+            # Создаем описание колонок
+            spr_sheet.create_Cols_Description()
 
         # Устанавливаем флаг коннекта к Spreadsheet API
         is_Connected_To_Spreadsheet = True
@@ -92,12 +93,10 @@ while True:
         log_File.write_Data(temperature, humidity)
 
         # Если включена отправка на почту / в таблицу
-        if is_Connected(cfg['Main']['Site_for_check']) == False \
+        if is_Connected(site_For_Check) == False \
             and (
-                cfg['email']['Mail_status'].lower() == 'on' 
-                or cfg['Spreadsheet']['Status'].lower() == 'on'
-                ):
-            
+                mail_Status == 'on' or spreadsheet_Status == 'on'
+            ):
                 # Ставим переменные в ложь для того, чтобы перелогиниться после того как появится интернет
                 is_Connected_To_Mail, is_Connected_To_Spreadsheet = False, False
 
@@ -105,45 +104,42 @@ while True:
                 Logger.write_To_Log('Connection lost, cannot sell mail/upload data to spreadsheet, retry on next cycle') 
         
         # Если не смогли залогиниться на старте или нужно перелогиниться после пропажи интернета
-        if is_Connected(cfg['Main']['Site_for_check']) is True:
-            if cfg['email']['Mail_status'].lower() == 'on' and is_Connected_To_Mail is False:
+        if is_Connected(site_For_Check) is True:
+            if mail_Status == 'on' and is_Connected_To_Mail is False:
                 mail.login()
 
                 is_Connected_To_Mail, last_Auth_Refresh_Time = True, datetime.now()
                 
-            if cfg['Spreadsheet']['Status'].lower() == 'on' and is_Connected_To_Spreadsheet is False:
+            if spreadsheet_Status == 'on' and is_Connected_To_Spreadsheet is False:
                 spr_sheet.login()
                 spr_sheet.open_Spreadsheet()
 
                 # Если это первая попытка логина при неудачном логине на старте
                 if cfg['Spreadsheet']['Clear spreadsheet on start'].lower() == 'on' and first_Try_To_Connect is True:
                     spr_sheet.clear_Spreadsheet()
-                    
-                    # Создаем описание колонок
                     spr_sheet.create_Cols_Description()
                 
                 is_Connected_To_Spreadsheet, first_Try_To_Connect = True, False
 
                 last_Auth_Refresh_Time = datetime.now()
 
-        # Перелогиниваемся каждый час, иначе будем получать connection timed out
-        if is_Connected(cfg['Main']['Site_for_check']) == True and datetime.now() >= last_Auth_Refresh_Time + timedelta(minutes = 30):
-            
-            if cfg['email']['Mail_status'].lower() == 'on':
+        # Перелогиниваемся каждые полчаса, иначе будем получать connection timed out
+        if is_Connected(site_For_Check) == True and datetime.now() >= last_Auth_Refresh_Time + timedelta(minutes = 30):     
+            if mail_Status == 'on':
                 mail.login()
                 last_Auth_Refresh_Time = datetime.now()
 
-            if cfg['Spreadsheet']['Status'].lower() == 'on':
+            if spreadsheet_Status == 'on':
                 spr_sheet.refresh_Token()
                 last_Auth_Refresh_Time = datetime.now()
         
         # Заливаем в таблицу построчно
-        if cfg['Spreadsheet']['Status'].lower() == 'on' and cfg['Spreadsheet']['Send_by_str'].lower() == 'on':
+        if spreadsheet_Status == 'on' and cfg['Spreadsheet']['Send_by_str'].lower() == 'on':
             spr_sheet.send_Str_To_Spreadsheet(temperature, humidity)
             print('Str sended to Spreadsheets')
 
         # Проверяем соединение с интернетом и пришло ли время для отправки
-        if is_Connected(cfg['Main']['Site_for_check']) == True:
+        if is_Connected(site_For_Check) == True:
             if datetime.now() >= last_Time_Send \
                 + timedelta(
                         hours = int(
@@ -156,12 +152,12 @@ while True:
                 ):
 
                 # Отправляем на почту при необходимости                                     
-                if cfg['email']['Mail_status'].lower() == 'on':
+                if mail_Status == 'on':
                     mail.send_File('Температура')
                     print('Send on', last_Time_Send)
 
                 # Заливаем в таблицу файл, если построчная отправка выключена                                                         
-                if cfg['Spreadsheet']['Status'].lower() == 'on' \
+                if spreadsheet_Status == 'on' \
                     and cfg['Spreadsheet']['Send_by_str'].lower() == 'off':
                         spr_sheet.send_To_Spreadsheet()
                         print('File sended to Spreadsheets')
@@ -184,8 +180,8 @@ while True:
 
                 # Если выбрано удаление, то просто отчищаем файл после каждой отправки
                 if cfg['Main']['Delete after sending'].lower() == 'on' \
-                    and (cfg['Spreadsheet']['Status'].lower() == 'on' \
-                        or cfg['email']['Mail_status'].lower() == 'on'):
+                    and (spreadsheet_Status == 'on' \
+                        or mail_Status == 'on'):
                     
                             log_File.clear_File()
 
@@ -194,8 +190,6 @@ while True:
 
             else:
                 print('Dont need send anything')
-
-
             
         # Ждем сколько-то и начинаем заново
         sleep(sleep_Period)
