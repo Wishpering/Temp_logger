@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 import smtplib
 from email.mime.multipart import MIMEMultipart
 
@@ -10,30 +8,31 @@ class Mail(object):
         self.Logger = logger
 
     def login(self):
+        """Функция для логина на SMTP сервере"""
+
         # Устанавливаем соединение
         try:
             self.server = smtplib.SMTP_SSL(self.email_configuration.get('server_address'))
-        except:
-            print('Cannot create SSL connection to SMTP server')
-            self.Logger.write_To_Log('Cannot create SSL connection to SMTP server')
+        except smtplib.SMTPException: 
+            self.Logger.critical('Can\'not create SSL connection to SMTP server')
             return
 
         # Смотрим, нужно ли включать дебаг
-        if self.email_configuration['Debug info'].lower() == 'on':
+        if self.email_configuration['Debug info'] is True:
             self.server.set_debuglevel(True)
-        if self.email_configuration['Debug info'].lower() == 'off':
+        else:
             self.server.set_debuglevel(False)
        
         # Логинимся
         try:
             self.server.login(self.email_configuration.get('Login'),self.email_configuration.get('Passwd'))
-        except:
-            print('Cannot log in SMTP server')
-            self.Logger.write_To_Log('Cannot log in SMTP server')
+        except smtplib.SMTPException:
+            self.Logger.critical('Can\'not log in SMTP server')
             return
 
-    # Функция для отправки файла
     def send_File(self, file_Name):
+        """Функция для отправки файла"""
+
         # Получаем период начало-конец записи лога температуры
         first_Line, last_Line = self.temp_Log_File.get_Period()
         # Готовим файл к отправке
@@ -49,7 +48,6 @@ class Mail(object):
         
         try:
             self.server.sendmail(self.email_configuration.get('Login'), self.email_configuration.get('email_to_send'), msg.as_string())
-        except:
-            print('Cannot send file via email')
-            self.Logger.write_To_Log('Cannot send file via email')
+        except smtplib.SMTPException:
+            self.Logger.critical('Can\'not send file via email')
             return

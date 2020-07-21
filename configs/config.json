@@ -2,9 +2,9 @@
     "email":
      {
       "//" : "Включить/отключить отправку почты", 
-      "Mail_status" : "on",
+      "Mail_status" : true,
       
-      "Debug info": "off",
+      "Debug info": false,
       
       "//" : "Почта для отправки",
       "email_to_send": "",
@@ -21,7 +21,7 @@
      "Spreadsheet":
      {
       "//" : "Включить/отключить отправку в гугл таблицы",
-      "Status" : "on",
+      "Status" : true,
 
       "//" : "Email, на который будет отправлена ссылка на таблицу",
       "email_To_Share": "",
@@ -29,27 +29,27 @@
       "//" : "Название таблицы",
       "Spreadsheet_name": "Temperature_log",
       "//" : "Отчищать таблицу на старте",
-      "Clear spreadsheet on start" : "on",
+      "Clear spreadsheet on start" : false,
       
-      "//" : "Отправка в одну колонку - on | Отправка в несколько колонок - off",
-      "No beauty": "on",
+      "//" : "Отправка в одну колонку - true | Отправка в несколько колонок - false",
+      "No beauty": true,
 
       "//" : "Отправлять показания при каждом опросе датчика",
-      "Send_by_str" : "on"
+      "Send_by_str" : true
      },
 
      "DHT":
      {
       "//" : "DHT11 - 11, DHT22 - 22, AM2302 - 2302",
-      "Sensor_Type": "22",
+      "Sensor_Type": 22,
       "//" : "Пин GPIO, к которому подключена Data линия",
-      "GPIO_Pin" : "2",      
+      "GPIO_Pin" : 2,      
       
       "//" : "Период опроса",
-      "Period" : "60",
+      "Period" : 60,
 
       "//" : "Округление показаний температуры до .. знака",
-      "Round" : "1"
+      "Round" : 1
      },
      
      "Main":
@@ -58,14 +58,14 @@
       "Site_for_check" : "google.com",
 
       "//" : "Архивировать файл с определенном периодом",
-      "Archive" : "on",
+      "Archive" : true,
       "//" : "Период архивации в формате << часы,минуты >>",
       "Period_before_arch": "1,0",
 
       "//" : "Отчищать файл после отправки",
-      "Delete after sending": "on",
+      "Delete after sending": true,
 
-      "//" : "Период отправки файла в таблицу (в случае, если Send_By_str == off) и на почту",
+      "//" : "Период отправки файла в таблицу (в случае, если Send_By_str == true) и на почту",
       "Period_before_send": "1,0"
      }
 

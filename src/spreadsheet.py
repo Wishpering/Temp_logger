@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
@@ -9,14 +7,20 @@ class Spreadsheet(object):
         self.row_Count = 2
         self.Path = Path
         self.path_To_File = path_To_File
-        self.cfg = cfg
         self.Logger = log
 
+        self.spreadsheet_name = cfg['Spreadsheet_name']
+        self.email_to_send = cfg['email_To_Share']
+        self.no_beauty = cfg['No beauty']
+
     def login(self):
+        """Функция для логина в Google API"""
+
         # Адреса для API
-        scope = ['https://spreadsheets.google.com/feeds',
-                 'https://www.googleapis.com/auth/drive'
-                ]
+        scope = [
+            'https://spreadsheets.google.com/feeds',
+            'https://www.googleapis.com/auth/drive'
+        ]
     
         # Вытаскиваем из JSON все что нужно
         self.credentials = ServiceAccountCredentials.from_json_keyfile_name(f'{self.Path}/auth/auth.json', scope)
@@ -25,57 +29,60 @@ class Spreadsheet(object):
         try:
             self.client = gspread.authorize(self.credentials)
         except gspread.exceptions.APIError:
-            print('Cannot login into spreadsheets')
-            self.Logger.write_To_Log('Cannot login into spreadsheets')
+            self.Logger.critical('Can\'not login into spreadsheets')
             return
 
-    # Функция для открытия таблицы
-    def open_Spreadsheet(self):
+    def open(self):
+        """Функция для открытия таблицы"""
+
         # Пытаемся открыть уже существующую с указанным именем
         try:
-            self.wrk_sheet = self.client.open(self.cfg['Spreadsheet_name'])
+            self.wrk_sheet = self.client.open(self.spreadsheet_name)
             self.sheet = self.wrk_sheet.get_worksheet(0)
         
         # Если таковой таблицы нет, то создаем новую с указанным именем
         except gspread.exceptions.SpreadsheetNotFound:
-            print('Spreadsheet not found, creating new....')
+            self.Logger.info('Spreadsheet not found, creating new....')
             
-            wrk_sheet = self.client.create(self.cfg['Spreadsheet_name'])
+            wrk_sheet = self.client.create(self.spreadsheet_name)
             # Отправялем ссылку на созданную таблицу 
-            wrk_sheet.share(str(self.cfg['email_To_Share']), perm_type = 'user', role = 'writer')
+            wrk_sheet.share(self.email_to_send, perm_type='user', role='writer')
             
-            self.wrk_sheet = self.client.open(self.cfg['Spreadsheet_name'])
+            self.wrk_sheet = self.client.open(self.spreadsheet_name)
             self.sheet = self.wrk_sheet.get_worksheet(0)
 
-    def refresh_Token(self):
+    def refresh_auth(self):
+        """Функция для открытия таблицы"""
+
         # Авторизовываемся и открываем таблицу (иначе будем получать 401 по таймауту)                                                                                                                                                                                           
         try:
             self.client = gspread.authorize(self.credentials)
-            self.wrk_sheet = self.client.open(self.cfg['Spreadsheet_name'])
+            self.wrk_sheet = self.client.open(self.spreadsheet_name)
             self.sheet = self.wrk_sheet.get_worksheet(0)
-        
         except gspread.exceptions:
-            print('Cannot refresh auth')
-            self.Logger.write_To_Log('Cannot refresh auth')
+            self.Logger.critical('Can\'not refresh auth')
             return
 
-    # Функция для отчистки таблицы
-    def clear_Spreadsheet(self):
-        if self.cfg['No beauty'] == 'on':
+    def clear(self):
+        """Функция для отчистки таблицы"""
+
+        if self.no_beauty is True:
             self.sheet.resize(rows = 1, cols = 1)
         else:
             self.sheet.resize(rows = 1, cols = 4)
 
-    # Функция для создания описания колонок
     def create_Cols_Description(self):
-        if self.cfg['No beauty'] != 'on':
+        """Функция для создания описания колонок"""
+
+        if self.no_beauty is not True:
             self.sheet.update_acell(f'A{1}', 'Дата')
             self.sheet.update_acell(f'B{1}', 'Время')
             self.sheet.update_acell(f'C{1}', 'Температура')
             self.sheet.update_acell(f'D{1}', 'Влажность')
 
-    # Функция для подсчета уже существующих строк
     def __line_Counting(self):
+        """Функция для подсчета уже существующих строк в таблице"""
+
         # На старте считаем количество строчек и присваиваем полученное значение переменной i  
         if self.row_Count == 2:
             max_rows = len(self.sheet.get_all_values())
@@ -86,17 +93,16 @@ class Spreadsheet(object):
             else:
                 self.row_Count= max_rows + 1
     
-    # # Функция для отправки строки в таблицу
-    def send_Str_To_Spreadsheet(self, temp, hum):
+    def send_str(self, temp, hum):
+        """Функция для отправки строки в таблицу"""
+
         try:
             self.sheet = self.wrk_sheet.get_worksheet(0)
         except gspread.exceptions.APIError:
-            print('Cannot send str to spreadsheet')
-            self.Logger.write_To_Log('Cannot send str to spreadsheet')
+            self.Logger.critical('Can\'not send str to spreadsheet')
             return
 
-        # Разбиваем datetime на дату и время
-        data = str(datetime.now()).rstrip().split(' ')
+        data = datetime.now()
 
         # Подсчитываем строки, для того, чтобы узнать с какой строки нужно записывать
         Spreadsheet.__line_Counting(self)
@@ -104,9 +110,12 @@ class Spreadsheet(object):
         # По мере необходимости добавляем строки
         self.sheet.resize(rows = self.row_Count)
 
-        if self.cfg['No beauty'] == 'on':
+        if self.no_beauty is True:
             # Записываем данные в соответствующие ячейки
-            self.sheet.update_acell(f'A{self.row_Count}', f'{data[0]} {data[1].split(".")[0]} Температура - {temp}' + '\u2103 ' + f'Влажность - {hum} %')
+            self.sheet.update_acell(
+                f'A{self.row_Count}', 
+                f'{data.date()} {data.time()} Температура - {temp}' + '\u2103 ' + f'Влажность - {hum} %'
+            )
         else:
             self.sheet.update_acell(f'A{self.row_Count}', data[0])
             self.sheet.update_acell(f'B{self.row_Count}', data[1].split('.')[0])
@@ -116,43 +125,41 @@ class Spreadsheet(object):
         # Увеличиваем счетчик строк на 1
         self.row_Count += 1         
 
-    # Функция для отправки файла в таблицу
-    def send_To_Spreadsheet(self):
+    def send_file(self):
+        """Функция для отправки файла в таблицу"""
+
         objects_For_Rm = ['Температура', '=', 'Влажность', '=', '%', '℃']
 
         # Считаем количество строк в файле
         count_Of_Lines = len(
             open(f'{self.Path}{self.path_To_File}', 'r').readlines()
-            )
+        )
         
         # Если в файле больше 20 строк, то отсылаем только последние 20 (связано с ограничением Google API на 100 requests в 100 секунд)
         try:
             with open(f'{self.Path}{self.path_To_File}', 'r') as temperature_Data:
                 # С красотой - только 20 строк за раз
-                if self.cfg['No beauty'] != 'on' and count_Of_Lines > 20:
+                if self.no_beauty is not True and count_Of_Lines > 20:
                     lines = temperature_Data.readlines()[count_Of_Lines - 20:]
 
                 # Без красоты - 45 строк за раз
-                if self.cfg['No beauty'] == 'on' and count_Of_Lines > 45:
+                if self.no_beauty is True and count_Of_Lines > 45:
                     lines = temperature_Data.readlines()[count_Of_Lines - 45:]  
 
                 else:
                     lines = temperature_Data.readlines()
         
         except FileNotFoundError:
-            print('Cannot open file to send it to spreadsheet')
-            self.Logger('Cannot open file to send it to spreadsheet')
+            self.Logger.critical('Can\'not open file to send it to spreadsheet')
 
-        if self.cfg['No beauty'] == 'on':
+        if self.no_beauty is True:
             for line in lines:              
                 # Подсчитываем строкив таблице, для того, чтобы узнать с какой строки нужно записывать
                 Spreadsheet.__line_Counting(self)
             
                 # По мере необходимости добавляем строки
                 self.sheet.resize(rows = self.row_Count)
-
                 self.sheet.update_acell(f'A{self.row_Count}', f'{line}')
-
                 self.row_Count += 1
         
         else:   
@@ -177,5 +184,3 @@ class Spreadsheet(object):
                 self.sheet.update_acell(f'D{self.row_Count}', line[3])
 
                 self.row_Count += 1
-
-            

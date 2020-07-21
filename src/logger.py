@@ -1,13 +1,17 @@
-#!/usr/bin/python3
+from logging import StreamHandler, getLogger, Formatter, INFO
+from sys import stdout
 
-import logging
-from datetime import datetime
+class Logger:
+    format = Formatter("%(asctime)s — %(levelname)s — %(message)s")
 
-class Logger(object):
-    def __init__(self, Path, log_Name):
-        logging.basicConfig(filename = f'{Path}/logs/{log_Name}', level = logging.ERROR)
-        self.log = logging.getLogger("DHT")
+    @classmethod
+    def get(cls):
+        console_handler = StreamHandler(stdout)
+        console_handler.setFormatter(Logger.format)
         
-    def write_To_Log(self, data):
-        self.log.exception(f'{datetime.now()} {data}' + '\n')
+        logger = getLogger('temp_logger')
+        logger.addHandler(console_handler)
+        logger.setLevel(INFO)
+
+        return logger
         
